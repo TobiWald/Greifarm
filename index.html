@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1024">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Greifarm · Schul-Edition</title>
-<style>:root { --accent: #2f6bff; --ink: #0b1024; --gold: #ffcc2e; --mc: #ff4f86; --ml: #ffa3c2; --md: #a8124a; }
+<style>:root { --accent: #0b5cad; --ink: #0b1024; --gold: #ffcc2e; --mc: #ff4f86; --ml: #ffa3c2; --md: #a8124a; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
@@ -1801,7 +1801,7 @@ const DEFAULT_PRIZES = [
 ];
 const DEFAULT_SETTINGS = {
   machines: 3, tries: 3, aimTime: 20, grip: 60, ballStyle: 'kapsel', demo: true, sound: true,
-  title: 'Homburgisches Gymnasium Nümbrecht', slogan: 'Greif dir deinen Preis!', accent: '#2f6bff', publicUrl: ''
+  title: 'Homburgisches Gymnasium Nümbrecht', slogan: 'Greif dir deinen Preis!', accent: '#0b5cad', publicUrl: ''
 };
 
 const Host = {
@@ -1814,6 +1814,7 @@ const Host = {
     document.body.classList.add('is-host');
     $('#host').hidden = false;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, store.get('hgn.settings', {}));
+    if (this.settings.accent === '#2f6bff') this.settings.accent = DEFAULT_SETTINGS.accent; // alter Standard
     this.prizes = store.get('hgn.prizes', null) || DEFAULT_PRIZES.map(p => Object.assign({ stock: '', ticket: false }, p));
     this.given = store.get('hgn.given', {});
     this.board = store.get('hgn.board', []);
@@ -2240,9 +2241,9 @@ const Host = {
   accentFromLogo() {
     if (!this.logoImg) return null;
     try {
-      const c = document.createElement('canvas'); c.width = c.height = 48;
-      const g = c.getContext('2d'); g.drawImage(this.logoImg, 0, 0, 48, 48);
-      const d = g.getImageData(0, 0, 48, 48).data, buckets = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
+      const c = document.createElement('canvas'); c.width = c.height = 160;
+      const g = c.getContext('2d'); g.drawImage(this.logoImg, 0, 0, 160, 160);
+      const d = g.getImageData(0, 0, 160, 160).data, buckets = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
       for (let i = 0; i < d.length; i += 4) {
         if (d[i + 3] < 200) continue;
         const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), l = (mx + mn) / 2, dd = mx - mn;
@@ -2250,13 +2251,21 @@ const Host = {
         const s = dd / (1 - Math.abs(2 * l - 1));
         let h = mx === r ? ((gg - b) / dd) % 6 : mx === gg ? (b - r) / dd + 2 : (r - gg) / dd + 4;
         h = (h * 60 + 360) % 360;
-        const k = buckets[Math.floor(h / 30)];
-        k.w += s; k.r += d[i] * s; k.g += d[i + 1] * s; k.b += d[i + 2] * s;
+        const k = buckets[Math.floor(h / 30)], wt = s * Math.pow(1 - l, 3);
+        k.w += wt; k.r += d[i] * wt; k.g += d[i + 1] * wt; k.b += d[i + 2] * wt;
       }
       const best = buckets.reduce((a, b) => b.w > a.w ? b : a);
-      if (best.w < 1) return null;
-      const hx = v => Math.round(v / best.w).toString(16).padStart(2, '0');
-      return '#' + hx(best.r) + hx(best.g) + hx(best.b);
+      if (best.w < 0.5) return null;
+      // Farbe so anpassen, dass weisse Schrift darauf gut lesbar bleibt
+      let r = best.r / best.w / 255, g2 = best.g / best.w / 255, b = best.b / best.w / 255;
+      const mx = Math.max(r, g2, b), mn = Math.min(r, g2, b), dd = mx - mn;
+      let hh = dd === 0 ? 0 : mx === r ? ((g2 - b) / dd) % 6 : mx === g2 ? (b - r) / dd + 2 : (r - g2) / dd + 4;
+      hh = (hh * 60 + 360) % 360;
+      const L = clamp((mx + mn) / 2, 0.3, 0.45), S = clamp(dd / (1 - Math.abs(mx + mn - 1) || 1), 0.55, 1);
+      const C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs((hh / 60) % 2 - 1)), m = L - C / 2;
+      const [r1, g1, b1] = hh < 60 ? [C, X, 0] : hh < 120 ? [X, C, 0] : hh < 180 ? [0, C, X] : hh < 240 ? [0, X, C] : hh < 300 ? [X, 0, C] : [C, 0, X];
+      const hx = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+      return '#' + hx(r1) + hx(g1) + hx(b1);
     } catch (e) { return null; }
   },
 

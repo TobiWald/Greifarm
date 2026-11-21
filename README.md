@@ -14,7 +14,7 @@ Greifautomaten-Spiel für den Beamer, gesteuert per Handy. Homburgisches Gymnasi
 - **M**: Ton an/aus
 
 ## Schullogo
-Logo in den Einstellungen hochladen oder als `logo.png` in dieses Repo legen.
+Das Logo liegt als `logo.png` im Repo und wird automatisch geladen. Ein anderes Logo kann in den Einstellungen hochgeladen werden.
 
 ## Abholscheine
 Bei Preisen mit „Schein“ bekommt der Gewinner einen QR-Code aufs Handy. An der Preisausgabe mit einer normalen Handy-Kamera scannen und als eingelöst markieren. Jeder Schein funktioniert nur einmal.
